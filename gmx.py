@@ -61,7 +61,7 @@ class GMX(object):
         """
         Attempt to execute the command
         @param command (string)
-        @raise subprocess.CalledProcessError
+        @return (int): the return code of the called process
         """
 
         cmd = command
@@ -88,11 +88,11 @@ class GMX(object):
 
             _logger.info('Executing: %s' % cmd)
             subprocess.check_call(command.split(), **kws)
-
+            return 0
 
         except subprocess.CalledProcessError, e:
             _logger.error('Command %s failed with %s' % (cmd, e.returncode))
-            raise
+            return e.returncode
 
         finally:
 
