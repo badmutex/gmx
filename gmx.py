@@ -20,7 +20,31 @@ _logger = ezlog.setup(__name__)
 
 class GMX(object):
 
+
+    """
+    Base class for all python tools wrapping GROMACS utility executables.
+
+    The GMX class provides 3 main abilities:
+      1) automatic management of a temprorary workarea accessible in subclasses as self.workarea
+      2) method for executing the GROMACS binary that handles redirection
+      3) calling parameters mirrors the underlying binary's flags
+
+    Developers need to implement the __call__(self, *args, **kwargs) method for specific utilities.
+        class MyUtil(GMX):
+            def __call__(self, *args, **kws):
+               ...
+
+    This way, a user has an interface similar to calling a commandline:
+        util = MyUtil(stdout='/dev/null', stderr='/dev/null')
+        results = util(f='traj.xtc', s='structure.tpr', n='foo.ndx')
+
+    """
+
+
     def __init__(self, stdout=None, stderr=None):
+        """
+        @params stdout=None (string), stderr=None (string): the paths to the files to record the std{out,error} output of the underlying GROMACS binary.
+        """
 
         self.stdout = stdout
         self.stderr = stderr
@@ -34,6 +58,11 @@ class GMX(object):
 
 
     def execute(self, command):
+        """
+        Attempt to execute the command
+        @param command (string)
+        @raise subprocess.CalledProcessError
+        """
 
         cmd = command
         kws = {}
@@ -63,6 +92,7 @@ class GMX(object):
 
         except subprocess.CalledProcessError, e:
             _logger.error('Command %s failed with %s' % (cmd, e.returncode))
+            raise
 
         finally:
 
@@ -75,6 +105,15 @@ class GMX(object):
             try: fd_err.close()
             except NameError: pass
 
+    def flags(self, **kws):
+        """
+        Accept arbitrary keyword arguments and format them for calling a GROMACS executable
+        @return (string)
+        """
+
+        return ' '.join([ '-%s %s' % (k, v) for k, v in kws.iteritems() ])
+
+
 
     def __call__(self, *args, **kws):
         raise NotImplementedError
@@ -84,6 +123,11 @@ class GMX(object):
 
 class g_rms (GMX):
 
+    """
+    Wrapper for the GROMACS g_rms executable
+    """
+
+
     def __init__(self, execname='g_rms', **kws):
         self.execname = execname
         self.regex    = re.compile(r'^\s*([-\.\d]+)\s+(?P<rmsd>[-\.\d]+)')
@@ -91,6 +135,10 @@ class g_rms (GMX):
         GMX.__init__(self, **kws)
 
     def __call__(self, **kws):
+        """
+        Only a single output file is allowed: use keyword 'o' (as in g_rms -o foo.xvg) for this
+        @return (numpy.array of floats)
+        """
 
         output = kws.pop('o', 'rmsd.xvg')
         output = os.path.join(self.workarea, output)
@@ -98,7 +146,7 @@ class g_rms (GMX):
         cmd = '%(exe)s -o %(output)s %(args)s' % {
             'exe' : self.execname,
             'output' : output,
-            'args' : ' '.join([ '-%s %s' % (k, v) for k,v in kws.iteritems() ]) }
+            'args' : self.flags(**kws)}
 
         self.execute(cmd)
  
