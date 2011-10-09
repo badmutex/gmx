@@ -159,15 +159,48 @@ class G_RMS (GMX):
             return np.array(rmsds)
 
 
+class G_GYRATE (GMX):
+
+    def __init__(self, execname='g_gyrate', **kws):
+        self.execname = execname
+        self.regex    = re.compile(r'^\s*([-\.\d]+)\s+(?P<values>[-\.\d]+)')
+
+        GMX.__init__(self, **kws)
+
+    def __call__(self, **kws):
+
+        output = kws.pop('o', 'gyrate.xvg')
+        output = os.path.join(self.workarea, output)
+
+        cmd = '%(exe)s -o %(output)s %(args)s' % {
+            'exe'    : self.execname,
+            'output' : output,
+            'args'   : self.flags(**kws) }
+
+        self.execute(cmd)
+
+        with open(output) as fd:
+            _logger.info('Reading radius of gyration from %s' % fd.name)
+
+            matches = itertools.ifilter(None, itertools.imap(self.regex.match, fd))
+            values = map(lambda m: float(m.group('values')), matches)
+            return np.array(values)
 
 
-def _test():
 
-    rmsd = g_rms(stdout='/dev/null', stderr='/dev/null')
+def _test_g_rms():
+
+    rmsd = G_RMS(stdout='/dev/null', stderr='/dev/null')
     rmsds = rmsd(o='foo.xvg', s='tests/test.pdb', f='tests/test.xtc', n='tests/test.ndx')
     print 'Number of values:', len(rmsds)
+
+def _test_g_gyrate():
+
+    func = G_GYRATE()
+    values = func(s='tests/test.pdb', f='tests/test.xtc', n='tests/test.ndx')
+    print values
 
 
 
 if __name__ == '__main__':
-    _test()
+    _test_g_gyrate()
