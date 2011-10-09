@@ -1,0 +1,26 @@
+
+* About
+  Often times we want to run GROMACS analysis tools on data from Python scripts.
+
+  It can be tiresome to handle this ourselves, so this is a simple
+  library of functions wrapping commonly used utilities.
+
+
+* Dependencies
+ - [[Python 2.7][http://python.org]]
+ - [[http://www.gromacs.org][GROMACS]]
+ - [[http://numpy.scipy.org][Numpy]]
+ - [[https://github.com/badi/ezlog][ezlog]]
+
+
+* Example
+  #+BEGIN_SRC python
+  import gmx
+
+  output = '/dev/null'
+  rmsds = gmx.g_rms('tests/test.xtc', s='tests/test.pdb', n='tests/test.ndx', o='rmsd.xvg',
+                    stdout=output, stderr=output)
+
+  for frame, value in enumerate(rmsds):
+      print frame, value
+  #+END_SRC
