@@ -2,8 +2,8 @@ from distutils.core import setup
 
 setup(name='gmx',
       version='1.0.0',
-      py_modules= ['gmx.gmx',
-                   'gmx.max'
+      py_modules= ['gmx.classes',
+                   'gmx.gmx'
                    ],
 
       author = "Badi' Abdul-Wahid",
